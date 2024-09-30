@@ -68,7 +68,7 @@ module.exports.loginusername = async (req, res) => {
       req.userID = decoded_value.id;
       console.log("User authenticated successfully");
     } else {
-      res.status(403).json({ msg: "You are not authenticated" });
+      res.status(403).json({ msg: "You are not authenticated!" });
     }
   } catch (error) {
     console.log(error);
