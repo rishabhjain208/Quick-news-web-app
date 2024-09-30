@@ -1,18 +1,45 @@
 import React, { useState, useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Header from "./components/Header";
 import Main from "./components/Main";
-import Typo from "typo-js";
 import Footer from "./components/Footer";
+import Authpage from "./components/Authpage";
+import axios from "axios";
 
 const API_KEY = "e7602362d72142009d1a8ac9be8b9dc7";
 const url = "https://newsapi.org/v2/everything?q=";
-
-const dictionary = new Typo("en_US");
 
 function App() {
   const [articles, setArticles] = useState([]);
   const [search, setSearch] = useState("");
   const [suggestion, setSuggestion] = useState("");
+  const [authToken, setAuthToken] = useState(localStorage.getItem("authToken"));
+  const [email, setEmail] = useState(null);
+
+  // Get the current path
+  const location = useLocation();
+
+  useEffect(() => {
+    const fetchEmail = async () => {
+      if (authToken) {
+        try {
+          const response = await axios.get(
+            `http://localhost:3000/api/auth/loginusername/${authToken}`,
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+              },
+            }
+          );
+          setEmail(response.data.email);
+        } catch (error) {
+          console.error("Failed to fetch email:", error);
+        }
+      }
+    };
+
+    fetchEmail();
+  }, [authToken]);
 
   useEffect(() => {
     fetchData(search || "all");
@@ -41,34 +68,56 @@ function App() {
     fetchData(search || "all");
   };
 
-  const handleSpellCheck = (query) => {
-    const isCorrect = dictionary.check(query);
-    if (!isCorrect) {
-      const suggestions = dictionary.suggest(query);
-      if (suggestions.length > 0) {
-        setSuggestion(suggestions[0]); // Display the first suggestion
-      }
-    }
-  };
-
   const handleSuggestionClick = () => {
     setSearch(suggestion);
     fetchData(suggestion);
     setSuggestion("");
   };
 
+  // Conditionally render the Header component
+  const hideHeader =
+    location.pathname === "/login" || location.pathname === "/register";
+
   return (
-    <div>
-      <Header
-        search={search}
-        onSearchChange={handleSearchChange}
-        onSearchSubmit={handleSearchSubmit}
-        suggestion={suggestion}
-        onSuggestionClick={handleSuggestionClick}
-      />
-      <Main articles={articles} />
+    <>
+      {!hideHeader && (
+        <Header
+          search={search}
+          handleSearchChange={handleSearchChange}
+          handleSearchSubmit={handleSearchSubmit}
+          suggestion={suggestion}
+          handleSuggestionClick={handleSuggestionClick}
+          authToken={authToken}
+          setAuthToken={setAuthToken}
+          email={email}
+          setEmail={setEmail}
+        />
+      )}
+      <Routes>
+        <Route path="/" element={<Main articles={articles} />} />
+        <Route
+          path="/login"
+          element={
+            <Authpage
+              isLogin={true}
+              setAuthToken={setAuthToken}
+              setEmail={setEmail}
+            />
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <Authpage
+              isLogin={false}
+              setAuthToken={setAuthToken}
+              setEmail={setEmail}
+            />
+          }
+        />
+      </Routes>
       <Footer />
-    </div>
+    </>
   );
 }
 

@@ -59,3 +59,25 @@ module.exports.login = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+
+module.exports.loginusername = async (req, res) => {
+  const token = req.params.token;
+  try {
+    const decoded_value = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded_value) {
+      req.userID = decoded_value.id;
+      console.log("User authenticated successfully");
+    } else {
+      res.status(403).json({ msg: "You are not authenticated" });
+    }
+  } catch (error) {
+    console.log(error);
+    res.json({
+      msg: "Incorrect inputs",
+    });
+  }
+  const user = await User.findOne({ _id: req.userID });
+  res.status(200).json({
+    email: user.email,
+  });
+};
